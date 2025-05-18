@@ -1,0 +1,127 @@
+let mover;
+let liquid;
+
+function setup() {
+  createCanvas(600, 400);
+  mover = new Mover();
+  liquid = new Liquid(0, height / 2, width, height / 2, 0.1);
+}
+
+function draw() {
+  background(220);
+
+  liquid.display();
+
+  if (liquid.contains(mover)) {
+    let drag = liquid.calculateDrag(mover);
+    mover.applyForce(drag);
+  }
+
+  let gravity = createVector(0, 0.2);
+  mover.applyForce(gravity);
+
+  if (mover.isOnSurface()) {
+    let friction = mover.calculateFriction(0.05);
+    mover.applyForce(friction);
+  }
+
+  mover.update();
+  mover.checkEdges();
+  mover.display();
+}
+
+function keyPressed() {
+  if (keyCode === RIGHT_ARROW) {
+    mover.applyForce(createVector(1, 0));
+  } else if (keyCode === LEFT_ARROW) {
+    mover.applyForce(createVector(-1, 0));
+  } else if (keyCode === UP_ARROW) {
+    mover.applyForce(createVector(0, -5));
+  }
+}
+
+// Classes
+
+class Mover {
+  constructor() {
+    this.mass = 1;
+    this.position = createVector(width / 2, 50);
+    this.velocity = createVector(0, 0);
+    this.acceleration = createVector(0, 0);
+  }
+
+  applyForce(force) {
+    let f = p5.Vector.div(force, this.mass);
+    this.acceleration.add(f);
+  }
+
+  update() {
+    this.velocity.add(this.acceleration);
+    this.position.add(this.velocity);
+    this.acceleration.mult(0);
+  }
+
+  display() {
+    stroke(0);
+    fill(127);
+    ellipse(this.position.x, this.position.y, this.mass * 16, this.mass * 16);
+  }
+
+  checkEdges() {
+    if (this.position.y > height - this.mass * 8) {
+      this.position.y = height - this.mass * 8;
+      this.velocity.y *= -0.6; // bounce
+    }
+    if (this.position.x > width) {
+      this.position.x = width;
+      this.velocity.x *= -1;
+    } else if (this.position.x < 0) {
+      this.position.x = 0;
+      this.velocity.x *= -1;
+    }
+  }
+
+  isOnSurface() {
+    return this.position.y >= height - this.mass * 8;
+  }
+
+  calculateFriction(c) {
+    let friction = this.velocity.copy();
+    friction.normalize();
+    friction.mult(-1);
+    friction.mult(c);
+    return friction;
+  }
+}
+
+class Liquid {
+  constructor(x, y, w, h, c) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.c = c;
+  }
+
+  contains(m) {
+    let l = m.position;
+    return l.x > this.x && l.x < this.x + this.w && l.y > this.y && l.y < this.y + this.h;
+  }
+
+  calculateDrag(m) {
+    let speed = m.velocity.mag();
+    let dragMagnitude = this.c * speed * speed;
+
+    let drag = m.velocity.copy();
+    drag.mult(-1);
+    drag.normalize();
+    drag.mult(dragMagnitude);
+    return drag;
+  }
+
+  display() {
+    noStroke();
+    fill(100, 100, 255, 150);
+    rect(this.x, this.y, this.w, this.h);
+  }
+}
