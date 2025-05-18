@@ -1,0 +1,92 @@
+let emitter;
+let img;
+
+function preload() {
+  img = loadImage('star.png'); // Make sure 'star.png' is in your project folder
+}
+
+function setup() {
+  createCanvas(600, 400);
+  emitter = new Emitter(createVector(width / 2, 50), img);
+}
+
+function draw() {
+  background(51);
+  emitter.emit();
+  emitter.update();
+  emitter.show();
+}
+
+class Particle {
+  constructor(position) {
+    this.pos = position.copy();
+    this.vel = createVector(random(-1, 1), random(-2, 0));
+    this.acc = createVector(0, 0.05);
+    this.lifespan = 255;
+  }
+
+  update() {
+    this.vel.add(this.acc);
+    this.pos.add(this.vel);
+    this.lifespan -= 2;
+  }
+
+  isDead() {
+    return this.lifespan < 0;
+  }
+
+  show() {
+    stroke(255, this.lifespan);
+    fill(255, this.lifespan);
+    ellipse(this.pos.x, this.pos.y, 8);
+  }
+}
+
+class CircleParticle extends Particle {
+  show() {
+    noStroke();
+    fill(0, 150, 255, this.lifespan);
+    ellipse(this.pos.x, this.pos.y, 16);
+  }
+}
+
+class ImageParticle extends Particle {
+  constructor(position, img) {
+    super(position);
+    this.img = img;
+    this.size = 20;
+  }
+
+  show() {
+    tint(255, this.lifespan);
+    imageMode(CENTER);
+    image(this.img, this.pos.x, this.pos.y, this.size, this.size);
+  }
+}
+
+class Emitter {
+  constructor(position, img) {
+    this.position = position.copy();
+    this.particles = [];
+    this.img = img;
+  }
+
+  emit() {
+    this.particles.push(new Particle(this.position));
+    this.particles.push(new CircleParticle(this.position));
+    this.particles.push(new ImageParticle(this.position, this.img));
+  }
+
+  update() {
+    for (let p of this.particles) {
+      p.update();
+    }
+    this.particles = this.particles.filter(p => !p.isDead());
+  }
+
+  show() {
+    for (let p of this.particles) {
+      p.show();
+    }
+  }
+}
